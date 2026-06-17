@@ -45,12 +45,11 @@ async function handleSearchDragon() {
         return;
     }
 
-    // Clean up the dragon string (remove extra spaces around semicolons)
-    // Transforms "D_A ; D_B" into "D_A;D_B"
+    // Clean up the dragon string: "D_A ; D_B" -> "D_A|D_B"
     const cleanedDragons = dragonValue.split(';')
         .map(d => d.trim())
         .filter(d => d !== "")
-        .join('|'); // Changed to '|' to be safer in URLs
+        .join('|'); 
 
     // Build URL
     const url = `${API_BASE_URL}?action=search&dragon=${encodeURIComponent(cleanedDragons)}&from=${dateFrom}&to=${dateTo}`;
@@ -66,18 +65,13 @@ async function handleSearchUnused() {
         return;
     }
     const days = parseInt(pastDaysInput.value);
-
     if (isNaN(days) || days < 0) {
         showError('Past days must be a positive number');
         return;
     }
 
-    // Build URL
-    const url = `${API_BASE_URL}?action=unuse&days=${days}`; 
-    // Note: Ensure 'action=unused' matches your Apps Script (your script used 'unused')
-    const correctedUrl = `${API_BASE_URL}?action=unused&days=${days}`;
-    
-    await fetchAndDisplayResults(correctedUrl, 'unused');
+    const url = `${API_BASE_URL}?action=unused&days=${days}`;
+    await fetchAndDisplayResults(url, 'unused');
 }
 
 /**
@@ -90,9 +84,9 @@ async function fetchAndDisplayResults(url, type) {
 
     try {
         const response = await fetch(url);
-        
+
         if (!response.ok) {
-            // FIXED: Added missing parenthesis
+            // FIXED: Added the missing ( )
             throw new Error(`API Error: ${response.status}`);
         }
 
@@ -114,7 +108,7 @@ async function fetchAndDisplayResults(url, type) {
         resultsSection.style.display = 'block';
     } catch (error) {
         console.error('Fetch Error:', error);
-        // FIXED: Added missing parenthesis
+        // FIXED: Added the missing ( )
         showError(`Failed to fetch data: ${error.message}`);
         showLoading(false);
     }
@@ -125,8 +119,6 @@ async function fetchAndDisplayResults(url, type) {
  */
 function displaySearchResults(data) {
     resultsContainer.innerHTML = '';
-
-    // Header with summary
     const dragonListText = data.dragons ? data.dragons.join(', ') : (data.dragon || 'Unknown Dragon');
     const headerHTML = `
         <div class="result-header">
@@ -145,7 +137,6 @@ function displaySearchResults(data) {
         return;
     }
 
-    // Display each result
     data.results.forEach((result, index) => {
         const resultHTML = `
             <div class="result-item">
@@ -184,7 +175,7 @@ function displayUnusedResults(data) {
         <div class="result-header">
             <h3>🐉 Unused Dragons Report</h3>
             <p>
-                <strong>${data.unusedCount}</strong> unused dragons out of 
+                <strong>${data.unusedCount}</strong> unused dragons out of
                 <strong>${data.masterTotal}</strong> total dragons
             </p>
             <p>Cutoff Date: ${data.cutoff} (${data.days} days)</p>
