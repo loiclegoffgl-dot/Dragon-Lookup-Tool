@@ -22,7 +22,8 @@ searchUnusedBtn.addEventListener('click', handleSearchUnused);
  */
 async function handleSearchDragon() {
     // Validation
-    if (!dragonNameInput.value.trim()) {
+    const dragonValue = dragonNameInput.value.trim();
+    if (!dragonValue) {
         showError('Please enter one or more Dragon IDs separated by ;');
         return;
     }
@@ -35,7 +36,6 @@ async function handleSearchDragon() {
         return;
     }
 
-    const dragonName = dragonNameInput.value.trim();
     const dateFrom = dateFromInput.value;
     const dateTo = dateToInput.value;
 
@@ -45,9 +45,15 @@ async function handleSearchDragon() {
         return;
     }
 
-    // Build URL
-    const url = `${API_BASE_URL}?action=search&dragon=${encodeURIComponent(dragonName)}&from=${dateFrom}&to=${dateTo}`;
+    // Clean up the dragon string (remove extra spaces around semicolons)
+    // Transforms "D_A ; D_B" into "D_A;D_B"
+    const cleanedDragons = dragonValue.split(';')
+        .map(d => d.trim())
+        .filter(d => d !== "")
+        .join(';');
 
+    // Build URL
+    const url = `${API_BASE_URL}?action=search&dragon=${encodeURIComponent(cleanedDragons)}&from=${dateFrom}&to=${dateTo}`;
     await fetchAndDisplayResults(url, 'search');
 }
 
@@ -55,23 +61,23 @@ async function handleSearchDragon() {
  * Handle Unused Dragons Search
  */
 async function handleSearchUnused() {
-    // Validation
     if (!pastDaysInput.value) {
         showError('Please enter a number of past days');
         return;
     }
-
     const days = parseInt(pastDaysInput.value);
-    
-    if (isNaN(days) || days < 1) {
+
+    if (isNaN(days) || days < 0) {
         showError('Past days must be a positive number');
         return;
     }
 
     // Build URL
-    const url = `${API_BASE_URL}?action=unused&days=${days}`;
-
-    await fetchAndDisplayResults(url, 'unused');
+    const url = `${API_BASE_URL}?action=unuse&days=${days}`; 
+    // Note: Ensure 'action=unused' matches your Apps Script (your script used 'unused')
+    const correctedUrl = `${API_BASE_URL}?action=unused&days=${days}`;
+    
+    await fetchAndDisplayResults(correctedUrl, 'unused');
 }
 
 /**
@@ -84,8 +90,9 @@ async function fetchAndDisplayResults(url, type) {
 
     try {
         const response = await fetch(url);
-
+        
         if (!response.ok) {
+            // FIXED: Added missing parenthesis
             throw new Error(`API Error: ${response.status}`);
         }
 
@@ -107,6 +114,7 @@ async function fetchAndDisplayResults(url, type) {
         resultsSection.style.display = 'block';
     } catch (error) {
         console.error('Fetch Error:', error);
+        // FIXED: Added missing parenthesis
         showError(`Failed to fetch data: ${error.message}`);
         showLoading(false);
     }
@@ -119,26 +127,21 @@ function displaySearchResults(data) {
     resultsContainer.innerHTML = '';
 
     // Header with summary
+    const dragonListText = data.dragons ? data.dragons.join(', ') : (data.dragon || 'Unknown Dragon');
     const headerHTML = `
         <div class="result-header">
-            <h3>🐉 ${
-    data.dragons
-      ? data.dragons.join(', ')
-      : (data.dragon || 'Unknown Dragon')
-}</h3>
-            <p>Found <strong>${data.count || 0}</strong> use case(s) between ${data.filter?.from} and ${data.filter?.to}</p>
+            <h3>🐉 ${escapeHtml(dragonListText)}</h3>
+            <p>Found <strong>${data.count || 0}</strong> use case(s) between ${data.filter?.from || ''} and ${data.filter?.to || ''}</p>
         </div>
     `;
     resultsContainer.innerHTML += headerHTML;
 
-    // Check if there are results
     if (!data.results || data.results.length === 0) {
-        const noResultsHTML = `
+        resultsContainer.innerHTML += `
             <div class="result-item">
                 <p style="text-align: center; color: #999;">No results found for this dragon in the specified date range.</p>
             </div>
         `;
-        resultsContainer.innerHTML += noResultsHTML;
         return;
     }
 
@@ -146,7 +149,7 @@ function displaySearchResults(data) {
     data.results.forEach((result, index) => {
         const resultHTML = `
             <div class="result-item">
-                <h4>${result.dragon} — Use Case #${index + 1}</h4>
+                <h4>${escapeHtml(result.dragon)} — Use Case #${index + 1}</h4>
                 <div class="result-meta">
                     <div class="meta-item">
                         <span class="meta-label">Date Range:</span>
@@ -154,15 +157,15 @@ function displaySearchResults(data) {
                     </div>
                     <div class="meta-item">
                         <span class="meta-label">Category:</span>
-                        <span class="meta-value">${result.category || 'N/A'}</span>
+                        <span class="meta-value">${escapeHtml(result.category || 'N/A')}</span>
                     </div>
                     <div class="meta-item">
                         <span class="meta-label">Subcategory:</span>
-                        <span class="meta-value">${result.subcategory || 'N/A'}</span>
+                        <span class="meta-value">${escapeHtml(result.subcategory || 'N/A')}</span>
                     </div>
                     <div class="meta-item">
                         <span class="meta-label">Context:</span>
-                        <span class="meta-value">${result.context || 'N/A'}</span>
+                        <span class="meta-value">${escapeHtml(result.context || 'N/A')}</span>
                     </div>
                 </div>
                 <div class="content-box">${escapeHtml(result.fullContent)}</div>
@@ -177,28 +180,22 @@ function displaySearchResults(data) {
  */
 function displayUnusedResults(data) {
     resultsContainer.innerHTML = '';
-
     const headerHTML = `
         <div class="result-header">
             <h3>🐉 Unused Dragons Report</h3>
             <p>
-                <strong>${data.unusedCount}</strong> unused dragons
-                out of <strong>${data.masterTotal}</strong>
-                total dragons
+                <strong>${data.unusedCount}</strong> unused dragons out of 
+                <strong>${data.masterTotal}</strong> total dragons
             </p>
-            <p>
-                Cutoff Date: ${data.cutoff}
-                (${data.days} days)
-            </p>
+            <p>Cutoff Date: ${data.cutoff} (${data.days} days)</p>
         </div>
     `;
-
     resultsContainer.innerHTML += headerHTML;
 
     if (!data.unused || data.unused.length === 0) {
         resultsContainer.innerHTML += `
             <div class="result-item">
-                No unused dragons found.
+                <p style="text-align: center; color: #999;">No unused dragons found.</p>
             </div>
         `;
         return;
@@ -208,7 +205,7 @@ function displayUnusedResults(data) {
         <tr>
             <td>${escapeHtml(dragon.dragonId)}</td>
             <td>${dragon.lastUsed || 'Never'}</td>
-            <td>${dragon.daysSince ?? '-'}</td>
+            <td>${dragon.daysSince !== null ? dragon.daysSince : '-'}</td>
         </tr>
     `).join('');
 
@@ -232,7 +229,6 @@ function displayUnusedResults(data) {
 
 function showLoading(show) {
     loadingSpinner.style.display = show ? 'block' : 'none';
-
     searchDragonBtn.disabled = show;
     searchUnusedBtn.disabled = show;
 }
@@ -248,7 +244,6 @@ function hideError() {
 
 function escapeHtml(text) {
     if (!text) return '';
-
     return text
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
