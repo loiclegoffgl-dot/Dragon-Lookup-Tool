@@ -121,7 +121,11 @@ function displaySearchResults(data) {
     // Header with summary
     const headerHTML = `
         <div class="result-header">
-            <h3>🐉 ${data.dragon || 'Unknown Dragon'}</h3>
+            <h3>🐉 ${
+    data.dragons
+      ? data.dragons.join(', ')
+      : (data.dragon || 'Unknown Dragon')
+}</h3>
             <p>Found <strong>${data.count || 0}</strong> use case(s) between ${data.filter?.from} and ${data.filter?.to}</p>
         </div>
     `;
