@@ -23,7 +23,7 @@ searchUnusedBtn.addEventListener('click', handleSearchUnused);
 async function handleSearchDragon() {
     // Validation
     if (!dragonNameInput.value.trim()) {
-        showError('Please enter a Dragon ID');
+        showError('Please enter one or more Dragon IDs separated by ;');
         return;
     }
     if (!dateFromInput.value) {
@@ -146,7 +146,7 @@ function displaySearchResults(data) {
     data.results.forEach((result, index) => {
         const resultHTML = `
             <div class="result-item">
-                <h4>Use Case #${index + 1}</h4>
+                <h4>${result.dragon} — Use Case #${index + 1}</h4>
                 <div class="result-meta">
                     <div class="meta-item">
                         <span class="meta-label">Date Range:</span>
