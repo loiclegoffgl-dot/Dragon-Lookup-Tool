@@ -1,5 +1,5 @@
 // Configuration
-const API_BASE_URL = "https://script.google.com/macros/s/AKfycbyHO9vGA_31tB35eDGdM1OC0SMu6pZSNecdtvPHjugRQWC54TsokZxK778GVLOryAg/exec;
+const API_BASE_URL = "https://script.google.com/macros/s/AKfycbwMQSuafGd_7h_Di2wAFVU5_XKav4AzKwhjIoHMHGOcfFYXXtOPSCUH6LfhtWgq_Pex/exec;
 
 // DOM Elements
 const dragonNameInput = document.getElementById('dragonName');
