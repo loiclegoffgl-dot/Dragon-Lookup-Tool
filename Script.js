@@ -1,0 +1,178 @@
+// Configuration
+const API_BASE_URL = "https://script.google.com/macros/s/AKfycbwZb5Oy9tHpS7WUos2JEJr8JLpbgOX75jsPfOrCBOVFd2TDzxnXivJuIaWaw-QdRG_Z/exec";
+
+// DOM Elements
+const dragonNameInput = document.getElementById('dragonName');
+const dateFromInput = document.getElementById('dateFrom');
+const dateToInput = document.getElementById('dateTo');
+const searchDragonBtn = document.getElementById('searchDragonBtn');
+const pastDaysInput = document.getElementById('pastDays');
+const searchUnusedBtn = document.getElementById('searchUnusedBtn');
+const resultsSection = document.getElementById('resultsSection');
+const resultsContainer = document.getElementById('resultsContainer');
+const loadingSpinner = document.getElementById('loadingSpinner');
+const errorMessage = document.getElementById('errorMessage');
+
+// Event Listeners
+searchDragonBtn.addEventListener('click', handleSearchDragon);
+searchUnusedBtn.addEventListener('click', handleSearchUnused);
+
+/**
+ * Handle Dragon Search
+ */
+async function handleSearchDragon() {
+    // Validation
+    if (!dragonNameInput.value.trim()) {
+        showError('Please enter a Dragon ID');
+        return;
+    }
+    if (!dateFromInput.value) {
+        showError('Please select a From Date');
+        return;
+    }
+    if (!dateToInput.value) {
+        showError('Please select a To Date');
+        return;
+    }
+
+    const dragonName = dragonNameInput.value.trim();
+    const dateFrom = dateFromInput.value;
+    const dateTo = dateToInput.value;
+
+    // Validate date range
+    if (new Date(dateFrom) > new Date(dateTo)) {
+        showError('From Date must be before To Date');
+        return;
+    }
+
+    // Build URL
+    const url = `${API_BASE_URL}?action=search&dragon=${encodeURIComponent(dragonName)}&from=${dateFrom}&to=${dateTo}`;
+
+    await fetchAndDisplayResults(url, 'search');
+}
+
+/**
+ * Handle Unused Dragons Search
+ */
+async function handleSearchUnused() {
+    // Validation
+    if (!pastDaysInput.value) {
+        showError('Please enter a number of past days');
+        return;
+    }
+
+    const days = parseInt(pastDaysInput.value);
+    
+    if (isNaN(days) || days < 1) {
+        showError('Past days must be a positive number');
+        return;
+    }
+
+    // Build URL
+    const url = `${API_BASE_URL}?action=unused&days=${days}`;
+
+    await fetchAndDisplayResults(url, 'unused');
+}
+
+/**
+ * Fetch data from API and display results
+ */
+async function fetchAndDisplayResults(url, type) {
+    showLoading(true);
+    hideError();
+    resultsSection.style.display = 'none';
+
+    try {
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+            showError(data.error);
+            showLoading(false);
+            return;
+        }
+
+        if (type === 'search') {
+            displaySearchResults(data);
+        } else if (type === 'unused') {
+            displayUnusedResults(data);
+        }
+
+        showLoading(false);
+        resultsSection.style.display = 'block';
+    } catch (error) {
+        console.error('Fetch Error:', error);
+        showError(`Failed to fetch data: ${error.message}`);
+        showLoading(false);
+    }
+}
+
+/**
+ * Display Search Results
+ */
+function displaySearchResults(data) {
+    resultsContainer.innerHTML = '';
+
+    // Header with summary
+    const headerHTML = `
+        <div class="result-header">
+            <h3>🐉 ${data.dragon || 'Unknown Dragon'}</h3>
+            <p>Found <strong>${data.count || 0}</strong> use case(s) between ${data.filter?.from} and ${data.filter?.to}</p>
+        </div>
+    `;
+    resultsContainer.innerHTML += headerHTML;
+
+    // Check if there are results
+    if (!data.results || data.results.length === 0) {
+        const noResultsHTML = `
+            <div class="result-item">
+                <p style="text-align: center; color: #999;">No results found for this dragon in the specified date range.</p>
+            </div>
+        `;
+        resultsContainer.innerHTML += noResultsHTML;
+        return;
+    }
+
+    // Display each result
+    data.results.forEach((result, index) => {
+        const resultHTML = `
+            <div class="result-item">
+                <h4>Use Case #${index + 1}</h4>
+                <div class="result-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">Date Range:</span>
+                        <span class="meta-value">${result.dateRange || 'N/A'}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Category:</span>
+                        <span class="meta-value">${result.category || 'N/A'}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Subcategory:</span>
+                        <span class="meta-value">${result.subcategory || 'N/A'}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Context:</span>
+                        <span class="meta-value">${result.context || 'N/A'}</span>
+                    </div>
+                </div>
+                <div class="content-box">${escapeHtml(result.fullContent)}</div>
+            </div>
+        `;
+        resultsContainer.innerHTML += resultHTML;
+    });
+}
+
+/**
+ * Display Unused Dragons Results
+ */
+function displayUnusedResults(data) {
+    resultsContainer.innerHTML = '';
+
+    // Header with summary
+    const headerHTML
