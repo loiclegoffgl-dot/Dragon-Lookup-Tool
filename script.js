@@ -50,7 +50,7 @@ async function handleSearchDragon() {
     const cleanedDragons = dragonValue.split(';')
         .map(d => d.trim())
         .filter(d => d !== "")
-        .join(';');
+        .join('|'); // Changed to '|' to be safer in URLs
 
     // Build URL
     const url = `${API_BASE_URL}?action=search&dragon=${encodeURIComponent(cleanedDragons)}&from=${dateFrom}&to=${dateTo}`;
