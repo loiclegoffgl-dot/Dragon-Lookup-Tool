@@ -174,5 +174,81 @@ function displaySearchResults(data) {
 function displayUnusedResults(data) {
     resultsContainer.innerHTML = '';
 
-    // Header with summary
-    const headerHTML
+    const headerHTML = `
+        <div class="result-header">
+            <h3>🐉 Unused Dragons Report</h3>
+            <p>
+                <strong>${data.unusedCount}</strong> unused dragons
+                out of <strong>${data.masterTotal}</strong>
+                total dragons
+            </p>
+            <p>
+                Cutoff Date: ${data.cutoff}
+                (${data.days} days)
+            </p>
+        </div>
+    `;
+
+    resultsContainer.innerHTML += headerHTML;
+
+    if (!data.unused || data.unused.length === 0) {
+        resultsContainer.innerHTML += `
+            <div class="result-item">
+                No unused dragons found.
+            </div>
+        `;
+        return;
+    }
+
+    const tableRows = data.unused.map(dragon => `
+        <tr>
+            <td>${escapeHtml(dragon.dragonId)}</td>
+            <td>${dragon.lastUsed || 'Never'}</td>
+            <td>${dragon.daysSince ?? '-'}</td>
+        </tr>
+    `).join('');
+
+    resultsContainer.innerHTML += `
+        <div class="result-item">
+            <table class="unused-table">
+                <thead>
+                    <tr>
+                        <th>Dragon ID</th>
+                        <th>Last Used</th>
+                        <th>Days Since</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function showLoading(show) {
+    loadingSpinner.style.display = show ? 'block' : 'none';
+
+    searchDragonBtn.disabled = show;
+    searchUnusedBtn.disabled = show;
+}
+
+function showError(message) {
+    errorMessage.textContent = message;
+    errorMessage.style.display = 'block';
+}
+
+function hideError() {
+    errorMessage.style.display = 'none';
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
